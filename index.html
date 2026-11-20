@@ -1051,7 +1051,9 @@ function boot(){
   app.custom=ls.get('ti_custom',[]);
   const saved=ls.get('ti_local_game',null);
   if(saved&&saved.status==='play'){app.mode='local';app.screen='game';app.s=saved}
-  let id=ls.get('ti_id',null);if(!id){id='u'+Math.random().toString(36).slice(2,10);ls.set('ti_id',id)}
+  // one id per tab (survives refresh), so two tabs on one device count as two players
+  let id=null;try{id=sessionStorage.getItem('ti_id')}catch{}
+  if(!id){id='u'+Math.random().toString(36).slice(2,10);try{sessionStorage.setItem('ti_id',id)}catch{}}
   app.myId=id;
   const h=(location.hash||'').replace('#','').toUpperCase();
   const hosted=ls.get('ti_host',null);
