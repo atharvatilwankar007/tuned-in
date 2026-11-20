@@ -861,7 +861,7 @@ function cleanupPeer(){
   if(net.peer){try{net.peer.destroy()}catch{}}net.peer=null;net.isHost=false;net.status='off';
 }
 const stripDeck=s=>{const{deck,...rest}=s;return rest};
-function saveHost(){if(net.isHost&&app.code)ls.set('ti_host',{code:app.code,s:app.s,at:Date.now()})}
+function saveHost(){if(net.isHost&&app.code){ls.set('ti_host',{code:app.code,s:app.s,at:Date.now()});try{sessionStorage.setItem('ti_hosting',app.code)}catch{}}}
 function broadcast(){
   if(!net.isHost)return;
   const msg={t:'state',s:stripDeck(app.s)};
@@ -1059,7 +1059,8 @@ function boot(){
   const hosted=ls.get('ti_host',null);
   if(/^[A-Z]{4}$/.test(h)){
     // reopening a room you host (e.g. after a refresh) resumes it; otherwise join as a guest
-    if(hosted&&hosted.code===h&&hosted.s&&Date.now()-hosted.at<6*3600e3)hostRoom(h,hosted.s,true);
+    let mine=false;try{mine=sessionStorage.getItem('ti_hosting')===h}catch{}
+    if(mine&&hosted&&hosted.code===h&&hosted.s&&Date.now()-hosted.at<6*3600e3)hostRoom(h,hosted.s,true);
     else joinRoom(h);
     if(!myName)toast('Type your name in the lobby to join');
     return;
