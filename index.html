@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10172a">
+<meta name="description" content="A free spectrum-guessing party game. Give a clue, turn the dial, read your friends' minds.">
+<title>Tuned In</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Cpath d='M5 55A45 45 0 0 1 95 55Z' fill='%23f3e9d2'/%3E%3Cpath d='M50 55L68 18' stroke='%233fd0b6' stroke-width='8' stroke-linecap='round'/%3E%3Ccircle cx='50' cy='55' r='9' fill='%23ff5d73'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow column, an analog radio dial on top, the turn panel underneath. Single committed night look. */
+:root{
+  --night:#10172a; --panel:#1a2440; --panel2:#222f52; --line:#2e3d66;
+  --ink:#eef0e6; --muted:#97a3c2; --face:#f3e9d2; --faceInk:#3a3326;
+  --b4:#ff5d73; --b3:#ffb238; --b2:#ffe08a; --needle:#3fd0b6;
+  --teamA:#4cc9f0; --teamB:#b49cff; --good:#5fe08f; --bad:#ff7b7b;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  background-image:radial-gradient(circle at 20% 0%,#1d2a52 0,transparent 55%),radial-gradient(circle at 100% 100%,#24193f 0,transparent 50%);
+  background-attachment:fixed}
+#app{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.15}
+h1{font-size:2.3rem;font-weight:900;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:700}
+h3{font-size:.95rem;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{min-width:0}
+.grow{flex:1 1 140px}
+button{font:inherit;font-weight:800;cursor:pointer;border:0;border-radius:12px;padding:12px 16px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);transition:transform .08s,background .15s}
+button:hover{background:#2a3963}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--needle);outline-offset:2px}
+.primary{background:var(--needle);color:#08231e;border-color:transparent}
+.primary:hover{background:#5ee3cb}
+.warm{background:var(--b3);color:#2b1a00;border-color:transparent}
+.warm:hover{background:#ffc35e}
+.small{padding:7px 11px;font-size:.82rem;border-radius:10px}
+.ghost{background:transparent}
+.wide{width:100%}
+input,select{font:inherit;color:var(--ink);background:var(--night);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+input::placeholder{color:#66729a}
+.code{font-family:var(--mono);font-weight:700;letter-spacing:.2em}
+.big-code{font-size:2.4rem;color:var(--b3)}
+.note{font-size:.85rem;color:var(--muted);background:var(--night);border:1px dashed var(--line);border-radius:12px;padding:10px 12px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:800;background:var(--panel2)}
+.tA{color:var(--teamA)} .tB{color:var(--teamB)}
+.bgA{background:color-mix(in srgb,var(--teamA) 18%,var(--panel))} .bgB{background:color-mix(in srgb,var(--teamB) 18%,var(--panel))}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.logo{font-family:var(--display);font-weight:900;font-size:1.05rem;letter-spacing:.02em}
+.logo span{color:var(--b3)}
+.scores{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.score{border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;border:1px solid var(--line)}
+.score b{font-family:var(--display);font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1}
+.score.active{border-color:currentColor;box-shadow:0 0 0 1px currentColor inset}
+.score.right{text-align:right}
+.goal{font-family:var(--mono);font-size:.75rem;color:var(--muted);text-align:center}
+
+/* dial */
+.dialwrap{position:relative;background:linear-gradient(180deg,#0b1122,#141d36);border:1px solid var(--line);border-radius:22px;padding:16px 12px 12px;display:flex;flex-direction:column;gap:10px}
+svg.dial{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+svg.dial.drag{cursor:grab}
+.ends{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.end{border-radius:12px;padding:10px 12px;font-weight:800;font-size:.95rem;line-height:1.25;display:flex;align-items:center;gap:8px;min-width:0}
+.end.l{background:#2b3a66}
+.end.r{background:#5b3a63;justify-content:flex-end;text-align:right}
+.bands{transform-origin:200px 200px}
+.bands.pop{animation:pop .7s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+.cluebox{text-align:center;display:flex;flex-direction:column;gap:4px;padding:6px 0}
+.clue{font-family:var(--display);font-size:1.8rem;font-weight:900;color:var(--b2);word-break:break-word}
+.opt{display:flex;justify-content:space-between;gap:10px;text-align:left;width:100%;padding:12px 14px}
+.opt span:last-child{text-align:right}
+.opt.sel{background:var(--needle);color:#08231e;border-color:transparent}
+.result{font-family:var(--display);font-size:2rem;font-weight:900;text-align:center}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.team{border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0;border:1px solid var(--line)}
+.plist{display:flex;flex-direction:column;gap:4px}
+.plist div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.howto ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.lp{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.lp button{padding:10px 12px}
+.customlist{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.customlist div{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.9rem;background:var(--night);border-radius:10px;padding:6px 6px 6px 12px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--night);font-weight:800;padding:10px 16px;border-radius:12px;max-width:calc(100% - 32px);z-index:20}
+.gate{text-align:center;align-items:center;padding:28px 18px}
+.gate .who{font-family:var(--display);font-size:1.6rem;font-weight:900;color:var(--b3)}
+.stamp{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+@media (max-width:420px){h1{font-size:1.9rem}.clue{font-size:1.5rem}.end{font-size:.85rem}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.net{font-family:var(--mono);font-size:.7rem;display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.net i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
+.net.down i{background:var(--bad)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+/* ---------------- Spectrum deck (all written for this game) ---------------- */
+const DECK_TEXT = `Cold|Hot
+Useless|Useful
+Boring|Exciting
+Cheap|Expensive
+Easy to do|Hard to do
+Soft|Hard
+Quiet|Loud
+Tiny|Huge
+Unhealthy|Healthy
+Ugly|Beautiful
+Slow|Fast
+Light|Heavy
+Smells bad|Smells good
+Dangerous|Safe
+Common|Rare
+Old-fashioned|Modern
+Sad song|Happy song
+Bad habit|Good habit
+Simple|Complicated
+Fragile|Indestructible
+Normal|Weird
+Forgettable|Unforgettable
+Temporary|Permanent
+Casual|Formal
+Calm|Chaotic
+Natural|Artificial
+Rough|Smooth
+Wet|Dry
+Not spicy at all|Mirchi level: max
+Mild inconvenience|Absolute disaster
+Underrated skill|Overrated skill
+Underrated movie|Overrated movie
+Underrated food|Overrated food
+Underrated city|Overrated city
+Underrated app|Overrated app
+Underrated cricketer|Overrated cricketer
+Underrated festival|Overrated festival
+Underrated snack|Overrated snack
+Underrated subject in school|Overrated subject in school
+Underrated decade|Overrated decade
+Underrated job|Overrated job
+Underrated body part|Overrated body part
+Underrated sport|Overrated sport
+Underrated fruit|Overrated fruit
+Underrated vegetable|Overrated vegetable
+Underrated Bollywood actor|Overrated Bollywood actor
+Underrated tourist spot in India|Overrated tourist spot in India
+Underrated holiday|Overrated holiday
+Underrated emoji|Overrated emoji
+Underrated life advice|Overrated life advice
+Bad advice|Good advice
+Terrible gift|Perfect gift
+Worst pizza topping|Best pizza topping
+Bad first date idea|Great first date idea
+Useless superpower|Amazing superpower
+Bad pet|Great pet
+Worst job|Dream job
+Bad movie|Great movie
+Waste of money|Worth every rupee
+Overpriced|Total bargain
+Embarrassing to admit|Proud to admit
+Cringe|Cool
+Red flag|Green flag
+Mid|Peak
+Flop|Blockbuster
+Nobody needs it|Everyone needs it
+Introvert activity|Extrovert activity
+Villain|Hero
+Teachers hate it|Teachers love it
+Side character|Main character
+Lazy|Hardworking
+Wallflower at parties|Life of the party
+Least trusted profession|Most trusted profession
+Beginner move|Expert move
+Kid thing|Adult thing
+For boomers|For Gen Z
+Weird to do alone|Normal to do alone
+Rude|Polite
+Annoying|Charming
+Mainstream|Niche
+Basic|Sophisticated
+Cat person thing|Dog person thing
+Morning person thing|Night owl thing
+Low effort|Try-hard
+Fake|Genuine
+Forgivable|Unforgivable
+Harmless|Harmful
+Childish|Mature
+Mumbai thing|Delhi thing
+North Indian|South Indian
+Aunty approved|Aunty disapproved
+Sharma ji's son would do it|Sharma ji's son would never
+Bollywood|Hollywood
+Street food|Five-star food
+Monsoon vibe|Summer vibe
+Chai person|Coffee person
+Engineering student energy|Arts student energy
+Wedding essential|Wedding waste
+Wedding buffet miss|Wedding buffet hit
+Jugaad|Proper solution
+Desi parents approve|Desi parents faint
+Useless on a train journey|Essential on a train journey
+Ghar ka khana|Restaurant food
+Tastes better at a dhaba|Tastes better at a hotel
+Cricket match snack|Wedding snack
+Rickshaw ride|Business class
+Bad thing to forget in your hostel|Fine to forget
+Fantasy|Sci-fi
+Past|Future
+Science|Magic
+Art|Science
+Nature|Technology
+Feels like Monday|Feels like Friday
+Feels like 2 AM|Feels like 9 AM
+Square|Round
+Dark|Bright
+Calm color|Loud color
+Sounds made up|Sounds like a real word
+Needs explaining|Self-explanatory
+Dumb idea|Genius idea
+Small talk topic|Deep talk topic
+Rare in movies|Always in movies
+Easy to spell|Hard to spell
+Easy to draw|Hard to draw
+Easy to pronounce|Hard to pronounce
+Easy to learn|Hard to master
+Short-lived trend|Timeless classic
+Ancient|Brand new
+Underground|World famous
+Local|Global
+Cozy|Uncomfortable
+Relaxing|Stressful
+Comforting|Scary
+Gross|Delicious
+Snack|Full meal
+Breakfast food|Dinner food
+Sweet|Savory
+Crunchy|Mushy
+Overcooked|Raw
+Would die first in a zombie movie|Would survive the apocalypse
+Useless in a fight|Useful in a fight
+Bad hiding spot|Great hiding spot
+Bad pet name|Great pet name
+Bad band name|Great band name
+Bad wedding song|Great wedding song
+Bad thing to say on a date|Good thing to say on a date
+Worst thing to find in your bed|Best thing to find in your bed
+Worst class in school|Best class in school
+Worst thing to step on barefoot|Best thing to step on barefoot
+Worst roommate habit|Best roommate habit
+Weak excuse|Bulletproof excuse
+Bad tattoo idea|Great tattoo idea
+Worst smell|Best smell
+Bad thing to have unlimited|Great thing to have unlimited
+Bad vacation spot|Dream vacation spot
+Bad idea at 3 AM|Great idea at 3 AM
+Bad thing to be famous for|Great thing to be famous for
+Worst place to get stuck|Best place to get stuck
+Disappointing last meal|Perfect last meal
+Bad first job|Great first job
+Dead app|Thriving app
+Old meme|Fresh meme
+Weak password|Strong password
+Boring Wi-Fi name|Legendary Wi-Fi name
+Overrated gadget|Underrated gadget
+Nobody watches it|Goes viral
+Toxic fandom|Wholesome fandom
+Online thing|Offline thing
+AI could do it|Only a human can do it
+Tech that aged badly|Tech that aged well
+Not worth posting|Instagram-worthy
+Not a sport|Definitely a sport
+Lazy workout|Brutal workout
+Easy sport|Hard sport
+Boring to watch|Thrilling to watch
+Weak superhero|Powerful superhero
+Harmless villain|Terrifying villain
+Worse sequel|Sequel better than original
+Bad movie snack|Great movie snack
+Requires skill|Pure luck
+Unlucky|Lucky
+Pessimist|Optimist
+Hated chore|Satisfying chore
+Anyone can do it|Needs a license
+Should be banned|Should be mandatory
+Not worth the queue|Worth the queue
+Healthy obsession|Unhealthy obsession
+Looks cheap|Looks expensive
+Easy to fake|Impossible to fake
+Better hot|Better cold
+Better alone|Better with friends
+Better at night|Better in daytime
+Better in summer|Better in winter
+Better as a kid|Better as an adult
+Low maintenance|High maintenance
+Friendly animal|Scary animal
+Weak animal|Strong animal
+Cute animal|Ugly animal
+Good pet|Should stay wild
+Good for the planet|Bad for the planet
+Waste of time|Productive
+Hobby|Job
+Underpaid|Overpaid
+Sounds fancy|Sounds cheap
+Cliché|Original
+Predictable|Plot twist
+Funny|Serious
+Funny word|Serious word
+Everyone agrees|Super divisive
+Nobody's favourite|Everyone's favourite
+Fine to forget|Terrible to forget
+Small lie|Huge lie
+Harmless prank|Prank gone too far
+Sounds like a medicine|Sounds like a dinosaur
+Sounds like a spell|Sounds like a disease
+Villain name|Hero name
+Sounds like a startup|Sounds like a sweet shop
+Hard to sell|Sells itself
+Teen movie|Oscar movie
+Bad on a long flight|Great on a long flight
+Reasonable to cry over|Ridiculous to cry over
+Things you share|Things you never share
+Things you rent|Things you buy
+Physical skill|Mental skill
+Straight|Curvy
+Sad movie|Feel-good movie
+Overthinker move|Underthinker move
+Sounds healthy|Is actually healthy
+Looks easy|Is actually easy
+Smells good|Tastes good
+Short|Tall
+Thin|Thick
+Empty|Full
+Clean|Dirty
+Old|Young
+Poor|Rich
+Weak|Strong
+Dull|Sharp
+Flexible|Rigid
+Peaceful|Violent
+Sane|Unhinged
+Wholesome|Unhinged
+Tame|Wild
+Polite to say|Rude to say
+Secret|Common knowledge
+Private|Public
+Personal|Professional
+Fun for kids|Fun for adults
+Hated as a kid|Loved as a kid
+Loved as a kid|Loved as an adult
+Day one skill|Ten-year skill
+Instant|Takes forever
+Cheap date|Expensive date
+Fancy restaurant order|Roadside order
+Bad thing to bring to a picnic|Perfect picnic item
+Bad smell in a car|Good smell in a car
+Bad ringtone|Great ringtone
+Bad thing to binge|Great thing to binge
+Hard to stop eating|Easy to stop eating
+Overrated drink|Underrated drink
+Overrated dessert|Underrated dessert
+Overrated restaurant chain|Underrated restaurant chain
+Overrated hobby|Underrated hobby
+Overrated car|Underrated car
+Overrated city in the world|Underrated city in the world
+Overrated cartoon|Underrated cartoon
+Overrated video game|Underrated video game
+Overrated board game|Underrated board game
+Overrated social media|Underrated social media
+Overrated sitcom|Underrated sitcom
+Overrated career|Underrated career
+Overrated weekend plan|Underrated weekend plan
+Overrated breakfast|Underrated breakfast
+Overrated life milestone|Underrated life milestone
+Overrated piece of clothing|Underrated piece of clothing
+Overrated season|Underrated season
+Overrated subject to study|Underrated subject to study
+Bad to say at a funeral|Fine to say at a funeral
+Bad to say in a job interview|Great to say in a job interview
+Bad to bring on a trek|Essential on a trek
+Bad to say to your boss|Great to say to your boss
+Bad present for your mom|Great present for your mom
+Bad hostel food|Good hostel food
+Bad song for a road trip|Perfect road trip song
+Worst way to wake up|Best way to wake up
+Worst way to travel|Best way to travel
+Worst sound|Best sound
+Worst texture|Best texture
+Worst flavour of ice cream|Best flavour of ice cream
+Worst Maggi topping|Best Maggi topping
+Worst chips flavour|Best chips flavour
+Worst exam|Best exam
+Worst group project member|Best group project member
+Worst thing to hear from a doctor|Best thing to hear from a doctor
+Worst thing to hear from a pilot|Best thing to hear from a pilot
+Worst place for a first kiss|Best place for a first kiss
+Worst reason to break up|Best reason to break up
+Worst invention|Best invention
+Worst decade for fashion|Best decade for fashion
+Worst haircut|Best haircut
+Worst thing to run out of|Best thing to run out of
+Worst place to live|Best place to live
+Normal at 20|Weird at 40
+Feels illegal|Is illegal
+Should be cheaper|Should be pricier
+Too much effort|Worth the effort
+Hard to explain to grandparents|Easy to explain to grandparents
+Grandparents would hate it|Grandparents would love it
+Things you outgrow|Things you never outgrow
+Things that get better with age|Things that get worse with age
+Overrated feeling|Underrated feeling
+Bad smell at a party|Good smell at a party
+Shower thought|Deep philosophy
+Meme|Masterpiece
+Lowkey|Highkey
+Chill|Intense
+Sleepy|Hyper
+Introvert's nightmare|Introvert's dream
+Extrovert's nightmare|Extrovert's dream
+Messy|Organized
+Spontaneous|Planned
+Cheap thrill|Life-changing experience
+Ordinary|Extraordinary
+Human|Robot
+Animal|Machine
+Liquid|Solid
+Living|Non-living
+Rural|Urban
+Desert|Ocean
+Land animal|Sea creature
+Herbivore energy|Carnivore energy
+Peaceful sound|Annoying sound
+Good name for a ship|Bad name for a ship
+Good name for a cafe|Bad name for a cafe
+Good name for a dog|Good name for a cat
+Sounds like a rapper|Sounds like a professor
+Sounds like a cocktail|Sounds like a cleaning product
+Sounds like a planet|Sounds like a pasta
+Sounds French|Sounds Japanese
+Looks fun|Is fun
+Cartoon logic|Real-world logic
+Fictional|Real
+Myth|Fact
+Conspiracy theory|Proven truth
+Totally safe|Totally risky
+Legal but sketchy|Illegal but harmless
+Guilty pleasure|Respectable taste
+Pretentious|Down to earth
+Rookie mistake|Rookie genius
+Party food|Sick-day food
+Exam season snack|Celebration snack
+Comfort show|Edge-of-your-seat show
+Good for a nap|Terrible for a nap
+Dad joke|Actually funny
+Cheesy line|Smooth line
+Unnecessary invention|Essential invention
+Sci-fi today|Sci-fi forever
+Expensive hobby|Free hobby
+Overrated celebrity couple|Underrated celebrity couple
+One-hit wonder|Legend
+Hated character|Beloved character
+Hard to love|Easy to love
+Easy to hate|Hard to hate
+Annoying in a group chat|Great in a group chat
+Text message|Phone call
+Early|Late
+Too soon|Too late
+Underdressed|Overdressed
+Indoor activity|Outdoor activity
+Weekday plan|Weekend plan
+Winter clothing|Summer clothing
+Cheap souvenir|Treasured souvenir
+Needs a manual|Totally intuitive
+Kitchen tool|Weapon
+Smells like rain|Smells like smoke
+Sound of happiness|Sound of panic
+Gen Z slang that's dead|Gen Z slang that's alive
+Normal amount of coffee|Concerning amount of coffee
+Healthy amount of screen time|Doom-scroll territory
+Fair|Unfair
+Tragic|Hilarious
+Cute|Creepy
+Overrated breakfast cereal|Underrated breakfast cereal
+Mildly interesting|Mind-blowing
+Exotic|Everyday
+Cheap thrill|Expensive thrill
+Bad superpower for a student|Perfect superpower for a student`;
+const BUILTIN = DECK_TEXT.split('\n').map(s=>s.trim()).filter(Boolean).map(s=>{const[l,r]=s.split('|');return{l,r}});
+
+/* ---------------- helpers ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls = {get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const shuffle = a => {a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const other = t => t==='A'?'B':'A';
+const keyOf = c => (c.l+'|'+c.r).toLowerCase();
+let toastT;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+
+/* ---------------- scoring ---------------- */
+const BANDS=[[3.5,4],[10.5,3],[17.5,2]];
+function scoreFor(n,t){const d=Math.abs(n-t);for(const[w,p]of BANDS)if(d<=w)return p;return 0}
+
+/* ---------------- app state ---------------- */
+const app = {
+  screen:'home', mode:null,       // mode: 'online' | 'local'
+  myId:null,
+  code:null, ref:null, unsub:null, s:null,
+  peek:false, selOpt:null, dragging:false, dragVal:null, lastBandsKey:null,
+  custom:[],
+  localPlayers: ls.get('ti_local_players',[{name:'',team:'A'},{name:'',team:'A'},{name:'',team:'B'},{name:'',team:'B'}]),
+  localGoal: 10,
+};
+let myName = ls.get('ti_name','');
+
+function seenSet(){return new Set(ls.get('ti_seen',[]))}
+function markSeen(cards){const s=seenSet();cards.forEach(c=>c&&s.add(keyOf(c)));const arr=[...s];ls.set('ti_seen',arr.slice(-2000))}
+function buildDeck(){
+  const all=[...BUILTIN,...app.custom.map(c=>({l:c.l,r:c.r}))];
+  const seen=seenSet(); const fresh=[],old=[];
+  const dedupe=new Set();
+  for(const c of all){const k=keyOf(c);if(dedupe.has(k))continue;dedupe.add(k);(seen.has(k)?old:fresh).push(c)}
+  if(fresh.length<10){ls.set('ti_seen',[]);return shuffle([...fresh,...old])}
+  return [...shuffle(fresh),...shuffle(old)];
+}
+
+/* ---------------- game logic (shared by online + local) ---------------- */
+function newGame(goal){
+  return {v:1,status:'lobby',players:{},scores:{A:0,B:0},goal,turnTeam:'A',psy:{A:0,B:0},psychic:null,phase:null,
+    options:[],card:null,target:90,clue:'',needle:90,counter:null,result:null,deck:buildDeck(),deckPos:0,round:0,created:Date.now()};
+}
+function teamOf(s,t){return Object.entries(s.players||{}).filter(([,p])=>p&&p.team===t).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0)).map(([id])=>id)}
+const playable=(s,t)=>teamOf(s,t).length>=2;
+function draw2(s){const d=s.deck,n=d.length;const a=d[s.deckPos%n],b=d[(s.deckPos+1)%n];return{options:[a,b],deckPos:s.deckPos+2}}
+function roundPatch(s,team){
+  const members=teamOf(s,team);
+  const psychic=members[(s.psy[team]||0)%members.length];
+  const target=Math.round((17.5+Math.random()*145)*10)/10;
+  return {status:'play',phase:'clue',turnTeam:team,psychic,...draw2(s),card:null,target,clue:'',needle:90,counter:null,result:null,round:(s.round||0)+1};
+}
+function startGamePatch(s){
+  const first = playable(s,'A')?'A':'B';
+  return roundPatch({...s,round:0},first);
+}
+function finishPatch(s,counter,needle){
+  const pts=scoreFor(needle,s.target);
+  const opp=other(s.turnTeam);
+  let cpts=0;
+  if(counter && pts<4){ if((counter==='left'&&s.target<needle)||(counter==='right'&&s.target>needle)) cpts=1 }
+  const scores={...s.scores};scores[s.turnTeam]+=pts;scores[opp]+=cpts;
+  return {phase:'reveal',counter:counter||null,needle,result:{pts,cpts},scores};
+}
+function winner(s){
+  const a=s.scores.A,b=s.scores.B;
+  if(Math.max(a,b)<s.goal||a===b)return null;
+  return a>b?'A':'B';
+}
+function nextPatch(s){
+  const psy={...s.psy};psy[s.turnTeam]=(psy[s.turnTeam]||0)+1;
+  const s2={...s,psy};
+  const nt=playable(s2,other(s.turnTeam))?other(s.turnTeam):s.turnTeam;
+  return {psy,...roundPatch(s2,nt)};
+}
+function rematchPatch(s){
+  const s2={...s,scores:{A:0,B:0},round:0};
+  return {scores:{A:0,B:0},...startGamePatch(s2)};
+}
+
+/* ---------------- backend: writes ---------------- */
+function deepMerge(a,b){const o={...a};for(const k in b){const v=b[k];if(v&&typeof v==='object'&&!Array.isArray(v)&&a[k]&&typeof a[k]==='object'&&!Array.isArray(a[k]))o[k]=deepMerge(a[k],v);else o[k]=v}return o}
+function push(patch){
+  if(app.mode==='local'){app.s=deepMerge(app.s,patch);ls.set('ti_local_game',app.s);render();return}
+  app.s=deepMerge(app.s,patch);render(); // optimistic
+  if(net.isHost)broadcast();
+  else if(net.hostConn&&net.hostConn.open){try{net.hostConn.send({t:'patch',patch})}catch{toast('Couldn’t send that move. Check your connection.')}}
+  else toast('Not connected to the host right now.');
+}
+// needle: coalesce drag updates to ~20 per second
+let needleTimer=null,needlePending=null;
+function sendNeedle(v){
+  if(app.mode==='local'){app.s.needle=v;return}
+  needlePending=v; if(needleTimer)return;
+  needleTimer=setTimeout(()=>{needleTimer=null;const n=needlePending;needlePending=null;if(n==null)return;
+    if(net.isHost){app.s.needle=n;net.conns.forEach(c=>{if(c.open)try{c.send({t:'needle',v:n})}catch{}});saveHost()}
+    else if(net.hostConn&&net.hostConn.open){try{net.hostConn.send({t:'needle',v:n})}catch{}}
+  },50);
+}
+
+/* ---------------- roles ---------------- */
+function role(){
+  const s=app.s; if(!s)return{};
+  if(app.mode==='local') return {me:null,team:null,psychic:true,guesser:true,counter:true,player:true};
+  const me=app.myId,p=s.players?.[me];
+  const team=p?.team||null;
+  return {me,team,player:!!p,psychic:s.psychic===me,guesser:!!p&&team===s.turnTeam&&s.psychic!==me,counter:!!p&&team&&team!==s.turnTeam};
+}
+const nameOf=id=>esc(app.s?.players?.[id]?.name||'Someone');
+
+/* ---------------- dial svg ---------------- */
+const CX=200,CY=200,R=182;
+const pt=(a,r)=>[CX-r*Math.cos(a*Math.PI/180),CY-r*Math.sin(a*Math.PI/180)];
+function wedge(a1,a2,r){a1=Math.max(0,a1);a2=Math.min(180,a2);const[x1,y1]=pt(a1,r),[x2,y2]=pt(a2,r);return`M${CX} ${CY}L${x1.toFixed(1)} ${y1.toFixed(1)}A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}Z`}
+function dialSVG({target,needle,showTarget,draggable,counter,pop}){
+  let ticks='';
+  for(let a=0;a<=180;a+=5){const big=a%30===0;const[x1,y1]=pt(a,R-2),[x2,y2]=pt(a,R-(big?16:8));ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#3a3326" stroke-opacity="${big?.55:.25}" stroke-width="${big?2.5:1.5}"/>`}
+  let bands='';
+  if(showTarget){
+    const t=target;
+    bands=`<g class="bands${pop?' pop':''}">
+      <path d="${wedge(t-17.5,t+17.5,R-4)}" fill="var(--b2)"/>
+      <path d="${wedge(t-10.5,t+10.5,R-4)}" fill="var(--b3)"/>
+      <path d="${wedge(t-3.5,t+3.5,R-4)}" fill="var(--b4)"/>
+      ${[[-14,2],[-7,3],[0,4],[7,3],[14,2]].map(([o,n])=>{const[x,y]=pt(t+o,R-26);return`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-family="JetBrains Mono,monospace" font-weight="700" font-size="13" fill="#3a1d10">${n}</text>`}).join('')}
+    </g>`;
+  }
+  let counterMark='';
+  if(counter){const side=counter==='left';counterMark=`<text x="${side?40:360}" y="190" text-anchor="middle" font-family="Unbounded,sans-serif" font-weight="900" font-size="22" fill="var(--teamB)">${side?'◀':'▶'}</text>`}
+  const[nx,ny]=pt(needle,R-10);
+  return `<svg class="dial${draggable?' drag':''}" id="dial" viewBox="0 0 400 214" role="img" aria-label="Dial from left end to right end. Needle at ${Math.round(needle/1.8)} percent.">
+    <defs><clipPath id="faceclip"><path d="${wedge(0,180,R)}"/></clipPath></defs>
+    <path d="${wedge(0,180,R+8)}" fill="#0a0f1d" stroke="#34436e" stroke-width="2"/>
+    <path d="${wedge(0,180,R)}" fill="var(--face)"/>
+    <g clip-path="url(#faceclip)">${bands}${ticks}</g>
+    ${counterMark}
+    <g id="needle"><line id="nl" x1="${CX}" y1="${CY}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="var(--needle)" stroke-width="9" stroke-linecap="round"/>
+    <circle id="nt" cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="${draggable?11:6}" fill="var(--needle)" stroke="#0b1122" stroke-width="3"/></g>
+    <circle cx="${CX}" cy="${CY}" r="22" fill="var(--b4)" stroke="#0b1122" stroke-width="4"/>
+    <rect x="0" y="${CY}" width="400" height="14" fill="transparent"/>
+  </svg>`;
+}
+function setNeedle(a){const[nx,ny]=pt(a,R-10);const l=$('#nl'),t=$('#nt');if(l){l.setAttribute('x2',nx.toFixed(1));l.setAttribute('y2',ny.toFixed(1))}if(t){t.setAttribute('cx',nx.toFixed(1));t.setAttribute('cy',ny.toFixed(1))}}
+function angleFromEvent(e,svg){
+  const r=svg.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*400,y=(e.clientY-r.top)/r.height*214;
+  const dx=x-CX,dy=CY-y;let a=Math.atan2(dy,-dx)*180/Math.PI;if(a<0)a=dx<0?0:180;
+  return Math.round(Math.min(180,Math.max(0,a))*10)/10;
+}
+function wireDial(){
+  const svg=$('#dial');if(!svg||!svg.classList.contains('drag'))return;
+  svg.addEventListener('pointerdown',e=>{app.dragging=true;svg.setPointerCapture(e.pointerId);const a=angleFromEvent(e,svg);app.dragVal=a;setNeedle(a);sendNeedle(a)});
+  svg.addEventListener('pointermove',e=>{if(!app.dragging)return;const a=angleFromEvent(e,svg);app.dragVal=a;setNeedle(a);sendNeedle(a)});
+  const end=()=>{if(!app.dragging)return;app.dragging=false;if(app.s&&app.dragVal!=null)app.s.needle=app.dragVal;app.dragVal=null;if(app.mode==='local')ls.set('ti_local_game',app.s);else render()};
+  svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+}
+function nudge(d){const v=Math.min(180,Math.max(0,(app.s.needle||90)+d));app.s.needle=v;setNeedle(v);sendNeedle(v)}
+
+/* ---------------- render ---------------- */
+function render(){
+  // keep typed text and focus across re-renders
+  const keep={};document.querySelectorAll('#app input').forEach(i=>{if(i.id)keep[i.id]=i.value});
+  const ae=document.activeElement;const focusId=ae&&ae.id&&ae.tagName==='INPUT'?ae.id:null;const sel=focusId?[ae.selectionStart,ae.selectionEnd]:null;
+  let html='';
+  if(app.screen==='home')html=homeView();
+  else if(app.screen==='localSetup')html=localSetupView();
+  else if(app.screen==='game')html=gameView();
+  $('#app').innerHTML=html;
+  for(const id in keep){const el=document.getElementById(id);if(el&&el.dataset.keep!=='no')el.value=keep[id]}
+  if(focusId){const el=document.getElementById(focusId);if(el){el.focus();try{el.setSelectionRange(sel[0],sel[1])}catch{}}}
+  wireDial();
+}
+
+function header(){
+  const pill=app.mode==='online'?`<span id="netpill" class="net${net.status==='ok'?'':' down'}"><i></i>${netLabel()}</span>`:'';
+  return `<div class="top"><div class="logo">TUNED<span>·</span>IN</div><div class="row">${pill}${app.screen!=='home'?`<button class="small ghost" data-act="leave">Leave</button>`:''}</div></div>`;
+}
+
+function homeView(){
+  const online=true;
+  return `${header()}
+  <div class="card" style="gap:16px">
+    <div class="eyebrow">A party game of reading minds</div>
+    <h1>Read the room. Find the spot.</h1>
+    ${dialSVG({target:122,needle:70,showTarget:true,draggable:false})}
+    <p class="muted">One player sees a hidden target on a spectrum and gives a one-word clue. Their team turns the needle to where they think it is. ${BUILTIN.length}+ spectrums, and cards you've already seen go to the back of the deck.</p>
+  </div>
+  <div class="card">
+    <h2>Play online</h2>
+    ${online?`
+      <label for="nm" class="eyebrow">Your name</label>
+      <input id="nm" maxlength="20" placeholder="e.g. Atharva" value="${esc(myName)}" autocomplete="nickname">
+      <button class="primary wide" data-act="create">Create a room</button>
+      <div class="row"><input id="joincode" class="grow code" maxlength="4" placeholder="ABCD" autocapitalize="characters" style="text-transform:uppercase"><button class="warm" data-act="join">Join</button></div>
+      <p class="note">No sign-up. Whoever creates the room hosts it, so they should keep this tab open (and their screen on) until the game ends.</p>
+    `:``}
+  </div>
+  <div class="card">
+    <h2>One phone, pass it around</h2>
+    <p class="muted">Sitting together or on a video call? Play on a single screen. The psychic takes the phone, everyone else looks away.</p>
+    <button class="wide" data-act="localSetup">Set up a local game</button>
+  </div>
+  <div class="card howto">
+    <h2>How a round works</h2>
+    <ol>
+      <li>The <b>psychic</b> picks one of two spectrums (say <i>Underrated skill ⟷ Overrated skill</i>) and secretly sees where the target sits.</li>
+      <li>They give a clue that lands there. Target in the middle? “Cooking” might do it.</li>
+      <li>Their team discusses and drags the needle, then locks it in.</li>
+      <li>The other team calls whether the target is <b>left or right</b> of the needle for 1 point.</li>
+      <li>Reveal: bullseye 4, next ring 3, outer ring 2. First team to the goal wins.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h2>Add your own spectrums</h2>
+    <p class="muted">Inside jokes welcome. Saved on this device and shuffled into every room you host.</p>
+    <div class="row"><input id="cl" class="grow" maxlength="40" placeholder="Left end"><input id="cr" class="grow" maxlength="40" placeholder="Right end"></div>
+    <button data-act="addCustom">Add spectrum</button>
+    ${app.custom.length?`<div class="customlist">${app.custom.map((c,i)=>`<div><span>${esc(c.l)} ⟷ ${esc(c.r)}</span><button class="small ghost" data-act="delCustom" data-i="${i}" aria-label="Remove">✕</button></div>`).join('')}</div>`:`<p class="stamp">No custom spectrums yet.</p>`}
+  </div>`;
+}
+
+function localSetupView(){
+  const ps=app.localPlayers;
+  return `${header()}
+  <div class="card">
+    <h2>Who's playing?</h2>
+    <p class="muted">Two teams work best. Everyone on one team also works: you just play together for a high score.</p>
+    ${ps.map((p,i)=>`<div class="lp"><input id="lp${i}" maxlength="20" placeholder="Player ${i+1}" value="${esc(p.name)}" data-keep="no" data-lp="${i}">
+      <button class="small ${p.team==='A'?'bgA tA':'bgB tB'}" data-act="lpTeam" data-i="${i}">Team ${p.team}</button>
+      <button class="small ghost" data-act="lpDel" data-i="${i}" aria-label="Remove player">✕</button></div>`).join('')}
+    <button data-act="lpAdd">Add player</button>
+    <div class="row"><label for="lgoal" class="grow">Points to win</label>
+      <select id="lgoal" style="width:auto">${[5,10,15,20].map(g=>`<option ${g===app.localGoal?'selected':''}>${g}</option>`).join('')}</select></div>
+    <button class="primary wide" data-act="localStart">Start</button>
+  </div>`;
+}
+
+function scoreBar(){
+  const s=app.s,hasB=teamOf(s,'B').length>0,hasA=teamOf(s,'A').length>0;
+  const box=(t,cls)=>`<div class="score ${cls} t${t} bg${t} ${s.turnTeam===t&&s.status==='play'?'active':''}"><span class="eyebrow t${t}">Team ${t}</span><b>${s.scores[t]}</b></div>`;
+  return `<div class="scores">${hasA?box('A',''):'<div></div>'}<div class="goal">to ${s.goal}<br>R${s.round||0}</div>${hasB?box('B','right'):'<div></div>'}</div>`;
+}
+
+function endsView(card){
+  const c=card||{l:'?',r:'?'};
+  return `<div class="ends"><div class="end l">◀ ${esc(c.l)}</div><div class="end r">${esc(c.r)} ▶</div></div>`;
+}
+
+function gameView(){
+  const s=app.s;
+  if(!s)return `${header()}<div class="card"><p class="muted">Tuning in…</p></div>`;
+  if(s.status==='lobby')return lobbyView();
+  const r=role(); const ph=s.phase; const local=app.mode==='local';
+  const psyName=nameOf(s.psychic);
+  let showTarget=false,draggable=false,panel='',card=s.card;
+  const tcls='t'+s.turnTeam;
+
+  if(ph==='clue'){
+    const seeing = local ? app.peek : r.psychic;
+    if(seeing){
+      showTarget=true;
+      const sel=app.selOpt??null; card=sel!=null?s.options[sel]:null;
+      panel=`<div class="card"><div class="eyebrow">You're the psychic · only you can see this</div>
+        <h3>Pick a spectrum</h3>
+        ${s.options.map((o,i)=>`<button class="opt ${sel===i?'sel':''}" data-act="pickOpt" data-i="${i}"><span>◀ ${esc(o.l)}</span><span>${esc(o.r)} ▶</span></button>`).join('')}
+        <button class="small ghost" data-act="redraw">Draw two different ones</button>
+        <label for="clue" class="eyebrow">Your clue</label>
+        <input id="clue" maxlength="40" placeholder="A word or short phrase" autocomplete="off">
+        <button class="primary wide" data-act="giveClue" ${sel==null?'disabled':''}>${sel==null?'Pick a spectrum first':'Give clue'}</button>
+      </div>`;
+    } else if(local){
+      panel=`<div class="card gate"><div class="eyebrow">Psychic for team ${s.turnTeam}</div><div class="who">${psyName}</div>
+        <p class="muted">Hand the phone to ${psyName}. Everyone else, look away.</p>
+        <button class="warm" data-act="peek">I'm ${psyName}, show me</button></div>`;
+    } else {
+      panel=`<div class="card gate"><div class="eyebrow ${tcls}">Team ${s.turnTeam}</div><div class="who">${psyName}</div>
+        <p class="muted">is picking a spectrum and thinking of a clue…</p>
+        <button class="small ghost" data-act="skip">Skip this turn</button></div>`;
+    }
+  }
+  if(ph==='guess'){
+    showTarget = !local && r.psychic;
+    draggable = local || r.guesser;
+    panel=`<div class="card"><div class="cluebox"><span class="eyebrow">${psyName}'s clue</span><div class="clue">“${esc(s.clue)}”</div></div>
+      ${draggable?`<p class="muted" style="text-align:center">Talk it out, drag the needle, then lock it in.</p>
+        <div class="row" style="justify-content:center"><button class="small" data-act="nudge" data-d="-1" aria-label="Move needle left">◀</button><button class="small" data-act="nudge" data-d="1" aria-label="Move needle right">▶</button></div>
+        <button class="primary wide" data-act="lock">Lock it in</button>`
+      : r.psychic?`<p class="muted" style="text-align:center">Your team is turning the dial. Poker face.</p>`
+      : `<p class="muted" style="text-align:center">Team ${s.turnTeam} is turning the dial…</p>`}
+    </div>`;
+  }
+  if(ph==='counter'){
+    const opp=other(s.turnTeam);
+    panel=`<div class="card"><div class="cluebox"><span class="eyebrow">Clue</span><div class="clue">“${esc(s.clue)}”</div></div>
+      ${(local||r.counter)?`<p style="text-align:center"><b class="t${opp}">Team ${opp}</b>: is the target left or right of the needle?</p>
+        <div class="teams"><button data-act="counter" data-v="left">◀ Left</button><button data-act="counter" data-v="right">Right ▶</button></div>`
+      :`<p class="muted" style="text-align:center">Team ${opp} is calling left or right…</p>`}
+    </div>`;
+  }
+  if(ph==='reveal'){
+    showTarget=true;
+    const res=s.result||{pts:0,cpts:0};const opp=other(s.turnTeam);
+    const label={4:'Bullseye! +4',3:'+3',2:'+2',0:'Missed'}[res.pts];
+    const w=winner(s);
+    panel=`<div class="card"><div class="cluebox"><span class="eyebrow">“${esc(s.clue)}” · ${psyName}</span>
+      <div class="result ${tcls}">${label}</div>
+      ${s.counter?`<p class="muted">Team ${opp} called ${s.counter}: ${res.cpts?`<b style="color:var(--good)">+1</b>`:res.pts===4?'no point on a bullseye':'wrong side'}</p>`:''}</div>
+      ${w?`<div class="cluebox"><div class="eyebrow">Game over</div><div class="result t${w}">Team ${w} wins</div></div>
+        <button class="primary wide" data-act="rematch">Play again</button>`
+      :`<button class="primary wide" data-act="next">Next round</button>`}
+    </div>`;
+  }
+  const bandsKey=s.round+':'+ph;
+  const pop = ph==='reveal' && app.lastBandsKey!==bandsKey;
+  app.lastBandsKey=bandsKey;
+  const needle = app.dragging && app.dragVal!=null ? app.dragVal : s.needle;
+  return `${header()}${scoreBar()}
+    <div class="dialwrap">${dialSVG({target:s.target,needle,showTarget,draggable,counter:ph==='reveal'||ph==='counter'?s.counter:null,pop})}${endsView(card)}</div>
+    ${panel}`;
+}
+
+function lobbyView(){
+  const s=app.s,r=role();
+  const A=teamOf(s,'A'),B=teamOf(s,'B');
+  const can=playable(s,'A')||playable(s,'B');
+  const list=ids=>ids.length?ids.map(id=>`<div>${nameOf(id)}${id===app.myId?' <span class="stamp">(you)</span>':''}</div>`).join(''):'<div class="stamp">nobody yet</div>';
+  return `${header()}
+  <div class="card" style="align-items:center;text-align:center">
+    <div class="eyebrow">Room code</div>
+    <div class="code big-code">${esc(app.code)}</div>
+    <div class="row" style="justify-content:center"><button class="small" data-act="copy">Copy invite link</button></div>
+    <p class="muted" style="font-size:.85rem">${net.isHost?'You’re the host: keep this tab open until the game ends. ':''}Friends open the invite link, or this site with code ${esc(app.code)}.</p>
+  </div>
+  <div class="card">
+    ${r.player?`<div class="row"><input id="lobbyname" class="grow" maxlength="20" value="${esc(s.players[app.myId].name)}" data-keep="no"><button class="small" data-act="rename">Save name</button></div>`
+      :`<div class="row"><input id="lobbyname" class="grow" maxlength="20" placeholder="Your name" value="${esc(myName)}"><button class="warm" data-act="joinSeat">Join game</button></div>`}
+    <div class="teams">
+      <div class="team bgA"><h3 class="tA">Team A</h3><div class="plist">${list(A)}</div>${r.player&&r.team!=='A'?`<button class="small" data-act="switch">Move to A</button>`:''}</div>
+      <div class="team bgB"><h3 class="tB">Team B</h3><div class="plist">${list(B)}</div>${r.player&&r.team!=='B'?`<button class="small" data-act="switch">Move to B</button>`:''}</div>
+    </div>
+    <div class="row"><label for="goal" class="grow">Points to win</label>
+      <select id="goal" style="width:auto" data-act-change="goal">${[5,10,15,20].map(g=>`<option ${g===s.goal?'selected':''}>${g}</option>`).join('')}</select></div>
+    <button class="primary wide" data-act="start" ${can&&r.player?'':'disabled'}>${can?'Start game':'Need at least 2 players on a team'}</button>
+  </div>`;
+}
+
+/* ---------------- online plumbing (PeerJS: the host's browser keeps the game, others connect to it) ---------------- */
+const PREFIX='tunedin-v1-';
+const net={peer:null,isHost:false,conns:[],hostConn:null,status:'off',retry:0};
+function randCode(){const L='ABCDEFGHJKLMNPQRSTUVWXYZ';let c='';for(let i=0;i<4;i++)c+=L[Math.floor(Math.random()*L.length)];return c}
+function setHash(code){try{history.replaceState(null,'','#'+code)}catch{}}
+function setNet(st){if(net.status!==st){net.status=st;const el=$('#netpill');if(el){el.className='net'+(st==='ok'?'':' down');el.lastChild.textContent=netLabel()}}}
+const netLabel=()=>net.status==='ok'?(net.isHost?'Hosting':'Connected'):'Reconnecting…';
+function cleanupPeer(){
+  net.conns.forEach(c=>{try{c.close()}catch{}});net.conns=[];
+  if(net.hostConn){const c=net.hostConn;net.hostConn=null;try{c.close()}catch{}}
+  if(net.peer){try{net.peer.destroy()}catch{}}net.peer=null;net.isHost=false;net.status='off';
+}
+const stripDeck=s=>{const{deck,...rest}=s;return rest};
+function saveHost(){if(net.isHost&&app.code)ls.set('ti_host',{code:app.code,s:app.s,at:Date.now()})}
+function broadcast(){
+  if(!net.isHost)return;
+  const msg={t:'state',s:stripDeck(app.s)};
+  net.conns.forEach(c=>{if(c.open)try{c.send(msg)}catch{}});
+  saveHost();
+}
+// apply a full state from the network without breaking an in-progress drag
+function applyState(next){
+  const prev=app.s;
+  const strip=o=>o?JSON.stringify({...o,needle:0,deck:0}):'';
+  if(prev&&strip(prev)===strip(next)){
+    if(!app.dragging){app.s.needle=next.needle;setNeedle(next.needle)}
+    return;
+  }
+  app.s=next;
+  if(prev&&next.round!==prev.round)app.selOpt=null;
+  if(app.dragging&&app.dragVal!=null)app.s.needle=app.dragVal;
+  if(app.s.options)markSeen(app.s.options);
+  if(app.dragging)return;
+  render();
+}
+let wakeLock=null;
+async function keepAwake(){try{wakeLock=await navigator.wakeLock?.request('screen')}catch{}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&net.isHost)keepAwake()});
+
+function hostRoom(code,state,resuming=false){
+  if(typeof Peer==='undefined'){toast('Couldn’t load the online engine. Check your internet and reload.');return}
+  cleanupPeer();
+  net.isHost=true;app.mode='online';app.code=code;app.s=state;app.screen='game';app.selOpt=null;app.peek=false;
+  setHash(code);render();keepAwake();
+  const peer=new Peer(PREFIX+code);net.peer=peer;
+  peer.on('open',()=>{net.retry=0;setNet('ok');saveHost()});
+  peer.on('connection',c=>{
+    c.on('open',()=>{net.conns.push(c);try{c.send({t:'full',s:app.s})}catch{}});
+    c.on('data',m=>onHostMsg(c,m));
+    c.on('close',()=>{net.conns=net.conns.filter(x=>x!==c)});
+    c.on('error',()=>{});
+  });
+  peer.on('disconnected',()=>{setNet('down');setTimeout(()=>{if(net.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch{}},1500)});
+  peer.on('error',e=>{
+    if(net.peer!==peer)return;
+    if(e.type==='unavailable-id'){
+      if(resuming&&net.retry<6){net.retry++;setNet('down');setTimeout(()=>{if(net.peer===peer)hostRoom(code,app.s,true)},3000)}
+      else if(resuming){toast('This room is already open in another tab.');goHome()}
+      else hostRoom(randCode(),state); // code clash: pick another
+    } else if(['network','server-error','socket-error','socket-closed'].includes(e.type)){setNet('down')}
+  });
+}
+function onHostMsg(c,m){
+  if(!m||typeof m!=='object')return;
+  if(m.t==='patch'&&m.patch&&typeof m.patch==='object'&&!Array.isArray(m.patch)){
+    applyState(deepMerge(app.s,m.patch));broadcast();
+  } else if(m.t==='needle'&&typeof m.v==='number'&&isFinite(m.v)){
+    const v=Math.min(180,Math.max(0,m.v));app.s.needle=v;if(!app.dragging)setNeedle(v);
+    net.conns.forEach(x=>{if(x!==c&&x.open)try{x.send({t:'needle',v})}catch{}});
+  }
+}
+
+function joinRoom(code){
+  if(typeof Peer==='undefined'){toast('Couldn’t load the online engine. Check your internet and reload.');return}
+  cleanupPeer();
+  net.isHost=false;app.mode='online';app.code=code;app.s=null;app.screen='game';app.selOpt=null;app.peek=false;
+  setHash(code);render();
+  const peer=new Peer();net.peer=peer;
+  peer.on('open',()=>connectHost(peer));
+  peer.on('disconnected',()=>{setTimeout(()=>{if(net.peer===peer&&!peer.destroyed)try{peer.reconnect()}catch{}},1500)});
+  peer.on('error',e=>{
+    if(net.peer!==peer)return;
+    if(e.type==='peer-unavailable'){
+      if(!app.s){toast('No room '+code+' right now. Check the code, or ask the host to keep their tab open.');goHome()}
+      else{setNet('down');setTimeout(()=>{if(net.peer===peer)connectHost(peer)},3000)}
+    } else if(['network','server-error','socket-error','socket-closed'].includes(e.type)){setNet('down')}
+  });
+}
+function connectHost(peer){
+  const c=peer.connect(PREFIX+app.code,{reliable:true});net.hostConn=c;
+  const slow=setTimeout(()=>{if(!app.s&&net.hostConn===c)toast('Still connecting to the host…')},8000);
+  c.on('open',()=>setNet('ok'));
+  c.on('data',m=>{
+    if(!m||typeof m!=='object')return;
+    if(m.t==='full'&&m.s){clearTimeout(slow);setNet('ok');const first=!app.s;applyState(m.s);
+      if(first&&!app.s.players?.[app.myId]&&myName&&app.s.status==='lobby')joinSeat(myName)}
+    else if(m.t==='state'&&m.s&&app.s){applyState({...m.s,deck:app.s.deck})}
+    else if(m.t==='needle'&&typeof m.v==='number'&&app.s){app.s.needle=m.v;if(!app.dragging)setNeedle(m.v)}
+  });
+  c.on('close',()=>{
+    if(net.hostConn!==c)return;
+    setNet('down');toast('Lost the host. Trying to reconnect…');
+    setTimeout(()=>{if(net.hostConn===c&&net.peer&&!net.peer.destroyed)connectHost(net.peer)},2500);
+  });
+  c.on('error',()=>{});
+}
+function joinSeat(name){
+  const s=app.s;if(!s)return;
+  if(!name){toast('Enter your name first');return}
+  myName=name;ls.set('ti_name',name);
+  const team=teamOf(s,'A').length<=teamOf(s,'B').length?'A':'B';
+  push({players:{[app.myId]:{name,team,joined:Date.now()}}});
+}
+
+function goHome(){
+  if(net.isHost)ls.set('ti_host',null);
+  cleanupPeer();
+  app.screen='home';app.mode=null;app.s=null;app.code=null;app.peek=false;app.selOpt=null;
+  try{history.replaceState(null,'',location.pathname+location.search)}catch{}
+  render();
+}
+
+/* ---------------- custom spectrums (saved on this device; they go into rooms you host) ---------------- */
+function saveCustom(list){app.custom=list;ls.set('ti_custom',list);render()}
+
+/* ---------------- events ---------------- */
+document.addEventListener('input',e=>{
+  const i=e.target.dataset.lp;if(i!=null){app.localPlayers[+i].name=e.target.value;ls.set('ti_local_players',app.localPlayers)}
+  if(e.target.id==='nm'){myName=e.target.value.trim();ls.set('ti_name',myName)}
+});
+document.addEventListener('change',e=>{
+  if(e.target.id==='goal'&&app.s)push({goal:+e.target.value});
+  if(e.target.id==='lgoal')app.localGoal=+e.target.value;
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  if(e.target.id==='clue')act('giveClue');
+  if(e.target.id==='joincode')act('join');
+});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.tagName==='SELECT')return;act(b.dataset.act,b.dataset)});
+
+async function act(a,d={}){
+  const s=app.s;
+  switch(a){
+    case 'leave': if(app.mode==='local')ls.set('ti_local_game',null); goHome(); break;
+    case 'create':{
+      const name=($('#nm')?.value||'').trim(); if(!name)return toast('Enter your name first');
+      myName=name;ls.set('ti_name',name);
+      const g=newGame(10);g.players[app.myId]={name,team:'A',joined:Date.now()};
+      hostRoom(randCode(),g);break;}
+    case 'join':{
+      const code=($('#joincode')?.value||'').trim().toUpperCase(); if(!/^[A-Z]{4}$/.test(code))return toast('Room codes are 4 letters');
+      const name=($('#nm')?.value||'').trim(); if(name){myName=name;ls.set('ti_name',name)}
+      joinRoom(code);break;}
+    case 'joinSeat': joinSeat(($('#lobbyname')?.value||'').trim()); break;
+    case 'rename':{const n=($('#lobbyname')?.value||'').trim();if(!n)return;myName=n;ls.set('ti_name',n);push({players:{[app.myId]:{name:n}}});toast('Name saved');break;}
+    case 'switch':{const t=s.players[app.myId].team;push({players:{[app.myId]:{team:other(t),joined:Date.now()}}});break;}
+    case 'copy':{const link=location.origin+location.pathname+'#'+app.code;
+      try{if(navigator.share&&matchMedia('(pointer:coarse)').matches){await navigator.share({title:'Tuned In',text:'Join my Tuned In room '+app.code,url:link});break}}catch(e){if(e&&e.name==='AbortError')break}
+      try{await navigator.clipboard.writeText(link);toast('Invite link copied')}catch{toast('Room code: '+app.code)}break;}
+    case 'start': if(playable(s,'A')||playable(s,'B'))push(startGamePatch(s)); break;
+    case 'pickOpt': app.selOpt=+d.i; render(); break;
+    case 'redraw': app.selOpt=null; push(draw2(s)); break;
+    case 'giveClue':{
+      const clue=($('#clue')?.value||'').trim(); if(app.selOpt==null)return toast('Pick a spectrum first'); if(!clue)return toast('Type a clue');
+      const card=s.options[app.selOpt]; app.selOpt=null; app.peek=false; markSeen([card]);
+      push({card,clue,phase:'guess',needle:90});
+      if(app.mode==='local')toast('Now show the screen to team '+s.turnTeam);
+      break;}
+    case 'peek': app.peek=true; render(); break;
+    case 'skip': push(nextPatch(s)); break;
+    case 'nudge': nudge(+d.d); break;
+    case 'lock':{
+      const needle=app.dragVal!=null&&app.dragging?app.dragVal:s.needle;
+      if(teamOf(s,other(s.turnTeam)).length>0)push({phase:'counter',needle});
+      else push(finishPatch(s,null,needle));
+      break;}
+    case 'counter': push(finishPatch(s,d.v,s.needle)); break;
+    case 'next': app.selOpt=null; push(nextPatch(s)); break;
+    case 'rematch': app.selOpt=null; push(rematchPatch(s)); break;
+    case 'localSetup': app.screen='localSetup'; render(); break;
+    case 'lpAdd': app.localPlayers.push({name:'',team:app.localPlayers.filter(p=>p.team==='A').length>app.localPlayers.filter(p=>p.team==='B').length?'B':'A'});ls.set('ti_local_players',app.localPlayers);render();break;
+    case 'lpDel': app.localPlayers.splice(+d.i,1);ls.set('ti_local_players',app.localPlayers);render();break;
+    case 'lpTeam':{const p=app.localPlayers[+d.i];p.team=other(p.team);ls.set('ti_local_players',app.localPlayers);render();break;}
+    case 'localStart':{
+      const ps=app.localPlayers.map((p,i)=>({name:p.name.trim()||('Player '+(i+1)),team:p.team}));
+      const g=newGame(app.localGoal);ps.forEach((p,i)=>g.players['p'+i]={...p,joined:i});
+      if(!playable(g,'A')&&!playable(g,'B'))return toast('Put at least 2 players on one team');
+      app.mode='local';app.screen='game';app.s=deepMerge(g,startGamePatch(g));app.peek=false;app.selOpt=null;
+      ls.set('ti_local_game',app.s);render();break;}
+    case 'addCustom':{
+      const l=($('#cl')?.value||'').trim(),r=($('#cr')?.value||'').trim();if(!l||!r)return toast('Fill in both ends');
+      $('#cl').value='';$('#cr').value='';
+      await saveCustom([...app.custom,{l,r}]);toast('Added. It’ll show up in new games.');break;}
+    case 'delCustom':{const list=app.custom.slice();list.splice(+d.i,1);await saveCustom(list);break;}
+  }
+}
+
+/* ---------------- boot ---------------- */
+function boot(){
+  app.custom=ls.get('ti_custom',[]);
+  const saved=ls.get('ti_local_game',null);
+  if(saved&&saved.status==='play'){app.mode='local';app.screen='game';app.s=saved}
+  let id=ls.get('ti_id',null);if(!id){id='u'+Math.random().toString(36).slice(2,10);ls.set('ti_id',id)}
+  app.myId=id;
+  const h=(location.hash||'').replace('#','').toUpperCase();
+  const hosted=ls.get('ti_host',null);
+  if(/^[A-Z]{4}$/.test(h)){
+    // reopening a room you host (e.g. after a refresh) resumes it; otherwise join as a guest
+    if(hosted&&hosted.code===h&&hosted.s&&Date.now()-hosted.at<6*3600e3)hostRoom(h,hosted.s,true);
+    else joinRoom(h);
+    if(!myName)toast('Type your name in the lobby to join');
+    return;
+  }
+  render();
+}
+boot();
+</script>
+
+</body>
+</html>
